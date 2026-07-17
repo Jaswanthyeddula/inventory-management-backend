@@ -1,3 +1,5 @@
+import threading
+
 from app import db
 from app.models.supplier import Supplier
 from app.services.email_service import send_warning_email
@@ -65,11 +67,16 @@ def stock_out(product_id, quantity):
         if stock.quantity < 10:
             supplier = Supplier.query.get(product_record.supplier_id)
         if supplier:
-            send_warning_email(
-                item_name=product_record.product_name,
-                items_left=stock.quantity,
-                supplier_email=supplier.email
+        
+            email_thread = threading.Thread(
+                target=send_warning_email,
+                kwargs={
+                    "item_name": product_record.product_name,
+                    "items_left": stock.quantity,
+                    "supplier_email": supplier.email
+                }
             )
+            email_thread.start()
             print(f"WARNING: Low stock for {product_record.product_name}. Email sent to {supplier.email}")
         else:
             print(f"WARNING: Low stock for {product_record.product_name}. No supplier email found.")
